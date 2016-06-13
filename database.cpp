@@ -37,6 +37,12 @@ static std::string ReadQuery(void);
 static Table *ExecuteQuery(Query *query);
 static void Cleanup(void); 
 
+static bool enable_optimizations = false;
+static bool print_result = true;
+static bool print_llvm = true;
+static bool execute_statement = false;
+static std::string statement = "";
+
 // compile: clang++ -g database.cpp `llvm-config --cxxflags --ldflags --system-libs --libs` -O0 -o database
 
 // explain how to do this:
@@ -44,21 +50,55 @@ static void Cleanup(void);
 // exercise/benchmark: 
 // SELECT * FROM table WHERE x > 5 AND (y < 10 OR z > 20);
 
-int main() {
+int main(int argc, char** argv) {
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
     InitializeNativeTargetAsmParser();
 
     Initialize();
 
-    std::cout << "# RembranDB server v0.0.0.1" << std::endl;
-    std::cout << "# Serving table \"table\", with no support for multithreading" << std::endl;
-    std::cout << "# Did not find any available memory (didn't look for any either)" << std::endl;
-    std::cout << "# Not listening to any connection requests." << std::endl;
-    std::cout << "# RembranDB/SQL module loaded" << std::endl;
+    for(int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg.find("--help") != std::string::npos) {
+            std::cout << "RembranDB Options." << std::endl;
+            std::cout << "  -opt              Enable  LLVM optimizations." << std::endl;
+            std::cout << "  -no-print         Do not print query results." << std::endl;
+            std::cout << "  -no-llvm          Do not print LLVM instructions." << std::endl;
+            std::cout << "  -s \"stmnt\"        Execute \"stmnt\" and exit." << std::endl;
+            return 0;
+        } else if (arg.find("-opt") != std::string::npos) {
+            std::cout << "Optimizations enabled." << std::endl;
+            enable_optimizations = true;
+        } else if (arg.find("-no-print") != std::string::npos) {
+            std::cout << "Printing output disabled." << std::endl;
+            print_result = false;
+        } else if (arg.find("-no-llvm") != std::string::npos) {
+            std::cout << "Printing LLVM disabled." << std::endl;
+            print_llvm = false;
+        } else if (arg.find("-s") != std::string::npos) {
+            execute_statement = true;
+        } else if (execute_statement) {
+            statement = std::string(arg);
+        }
+    }
+
+    if (!execute_statement) {
+        std::cout << "# RembranDB server v0.0.0.1" << std::endl;
+        std::cout << "# Serving table \"demo\", with no support for multithreading" << std::endl;
+        std::cout << "# Did not find any available memory (didn't look for any either)" << std::endl;
+        std::cout << "# Not listening to any connection requests." << std::endl;
+        std::cout << "# RembranDB/SQL module loaded" << std::endl;
+    }
+
     while(true) {
         ResetJIT();
-        std::string query_string = ReadQuery();
+        std::string query_string;
+        if (!execute_statement) {
+            query_string = ReadQuery();
+        } else {
+            query_string = statement;
+        }
+
         if (query_string == "\\q" || (query_string.size() > 0 && query_string[0] == '^')) break;
         if (query_string == "\\d") {
             PrintTables();
@@ -73,8 +113,11 @@ int main() {
 
             printf("Total Runtime: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
 
-            PrintTable(tbl);
+            if (print_result) {
+                PrintTable(tbl);
+            }
         }
+        if (execute_statement) break;
     }
 
     Cleanup();
@@ -103,7 +146,9 @@ static void ResetJIT(void) {
     // Create a new pass manager attached to it.
     fpm = llvm::make_unique<legacy::FunctionPassManager>(module.get());
 
-    //EnableOptimizations();
+    if (enable_optimizations) {
+        EnableOptimizations();
+    }
     fpm->doInitialization();
 }
 
@@ -296,7 +341,9 @@ ExecuteQuery(Query *query) {
         verifyFunction(*function);
         fpm->run(*function);
 
-        module->dump();
+        if (print_llvm) {
+            module->dump();
+        }
         jit->addModule(std::move(module));
         toc = clock();
         compile += (double) (toc - tic)  / CLOCKS_PER_SEC;
