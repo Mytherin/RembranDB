@@ -29,6 +29,7 @@ struct Column {
     lng size;
     void *data;
     Column *next;
+    char *data_location = NULL;
     llvm::AllocaInst *address;
 };
 
@@ -113,17 +114,9 @@ static Table* ReadTable(std::string table_name, std::string name) {
                 std::cout << "Unable to open file " << colfname << std::endl;
                 return NULL;
             }
-            column->data = malloc(column->size * column->elsize);
-            if (column->data == NULL) {
-                std::cout << "Malloc fail" << std::endl;
-                return NULL;
-            }
-            size_t elements_read = fread(column->data, column->elsize, column->size, fp);
-            if (elements_read != (size_t) (column->size)) {
-                std::cout << "Read incorrect number of elements from file " << colfname << ", expected " << column->size << " but read " << elements_read << std::endl;
-                return NULL;
-            }
             fclose(fp);
+            column->data = NULL;
+            column->data_location = strdup(colfname.c_str());
             table->columns = column;
         }
         return table;
@@ -248,6 +241,25 @@ static void PrintTable(Table *table) {
     if (index < table->columns->size) {
         std::cout << "An additional " << table->columns->size - index << " columns  were not printed (total results: " << table->columns->size << ")." << std::endl;
     }
+}
+
+static void 
+ReadColumnData(Column *column) {
+    if (!column) return;
+    if (column->data) return;
+
+    FILE *fp = fopen(column->data_location, "r");
+    column->data = malloc(column->size * column->elsize);
+    if (column->data == NULL) {
+        std::cout << "Malloc fail" << std::endl;
+        return;
+    }
+    size_t elements_read = fread(column->data, column->elsize, column->size, fp);
+    if (elements_read != (size_t) (column->size)) {
+        std::cout << "Read incorrect number of elements from file " << column->data_location << ", expected " << column->size << " but read " << elements_read << std::endl;
+        return;
+    }
+    fclose(fp);
 }
 
 static llvm::Type*

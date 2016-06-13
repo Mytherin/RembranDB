@@ -104,6 +104,7 @@ static bool IsOperator(char c) {
     return false;
 }
 
+
 static void _PrintOperation(Operation* operation) {
     if (!operation) return;
     if (operation->Type() == OPTYPE_binop) {
@@ -127,7 +128,8 @@ static void _PrintOperation(Operation* operation) {
     }
 }
 
-static void PrintOperation(Operation* operation) {
+void PrintOperation(Operation* operation) {
+    if (!operation) return;
     // print a chain of operations, to check if it has been parsed correctly
     _PrintOperation(operation);
     std::cout << std::endl << std::flush;
@@ -471,6 +473,8 @@ _GetColumns(Table *table, Operation *op, ColumnList *current) {
             std::cout << "Unrecognized column name " << ((ColumnOperation*)op)->name << std::endl;
             return false; //unrecognized column
         }
+        // this column is used in a query, read the column data into memory if it is not already there
+        ReadColumnData(column);
         ((ColumnOperation*)op)->column = column;
         for(; current->next != NULL; current = current->next)  {
             if (current->column == column) return true;

@@ -8,10 +8,10 @@ root_folder = "Tables"
 os.system('rm -rf %s' % root_folder)
 os.mkdir('Tables')
 
-int_count = (1000 ** 2) / 4
+int_count = (1000 ** 3) / 4
 
-demo_table = {'name': 'demo', 'columns': {'x': {'type': 'int', 'count': 20}, 'y': {'type': 'int', 'count': 20}, 'z': {'type': 'int', 'count': 20}}}
-benchmark_table = {'name': 'benchmark', 'columns': {'x': {'type': 'int', 'count': int_count}, 'y': {'type': 'int', 'count': int_count}, 'z': {'type': 'int', 'count': int_count}}}
+demo_table = {'name': 'demo', 'columns': {'x': {'type': 'dbl', 'count': 20}, 'y': {'type': 'dbl', 'count': 20}, 'z': {'type': 'dbl', 'count': 20}}}
+benchmark_table = {'name': 'benchmark', 'columns': {'x': {'type': 'dbl', 'count': int_count}, 'y': {'type': 'dbl', 'count': int_count}, 'z': {'type': 'dbl', 'count': int_count}}}
 
 tables = [demo_table, benchmark_table]
 # fixed seed
@@ -39,4 +39,3 @@ for table in tables:
             randdata.astype('float64').tofile(col_file)
         print(name, colname, randdata[:10])
         col_file.close()
-
