@@ -128,11 +128,32 @@ static void _PrintOperation(Operation* operation) {
     }
 }
 
+static std::string _OperationToString(Operation* operation);
+static std::string _OperationToString(Operation* operation) {
+    if (!operation) return std::string("");
+    if (operation->Type() == OPTYPE_binop) {
+        BinaryOperation *binop = (BinaryOperation*) operation;
+        return std::string("(") + _OperationToString(binop->LHS) + std::string(" ") + binop->op + std::string(" ") + _OperationToString(binop->RHS) + std::string(")");
+    }
+    if (operation->Type() == OPTYPE_colmn) {
+        ColumnOperation *colop = (ColumnOperation*) operation;
+        return std::string(colop->name);
+    }
+    if (operation->Type() == OPTYPE_const) {
+        ConstantOperation *constop = (ConstantOperation*) operation;
+        return std::to_string(constop->value);
+    }
+    return std::string("");
+}
+
+static char*
+OperationToString(Operation *operation) {
+    return strdup(_OperationToString(operation).c_str());
+}
+
 void PrintOperation(Operation* operation) {
     if (!operation) return;
-    // print a chain of operations, to check if it has been parsed correctly
-    _PrintOperation(operation);
-    std::cout << std::endl << std::flush;
+    std::cout << OperationToString(operation) << std::endl;
 }
 
 static std::string TokToString(int token) {
@@ -382,6 +403,32 @@ ParseOperationList(std::string query, size_t& index) {
     }
 }
 
+static OperationList*
+InvertList(OperationList *list) {
+    OperationList *result = NULL;
+    while(list) {
+        OperationList *next = list->next;
+        list->next = result;
+        result = list;
+        list = next;
+    }
+    return result;
+}
+
+static OperationList*
+SelectStarFromTable(Table *table) {
+    OperationList *collection = NULL;
+    Column *columns = table->columns;
+    while(columns) {
+        OperationList *op = (OperationList*) malloc(sizeof(OperationList));
+        op->next = collection;
+        op->operation = (Operation*) new ColumnOperation(columns->name);
+        collection = op;
+        columns = columns->next;
+    }
+    return InvertList(collection);
+}
+
 static Query *ParseQuery(std::string query) {
     // we only accept queries in the form SELECT [expr] FROM table WHERE [expr]
     Query *parsed_query = (Query*) malloc(sizeof(Query));
@@ -389,23 +436,34 @@ static Query *ParseQuery(std::string query) {
     parsed_query->selection = NULL;
     parsed_query->table = NULL;
     parsed_query->where = NULL;
+    bool select_all = false;
     size_t index = 0;
     Token token;
     char state = tok_invalid;
     while((token = ParseToken(query, index)) < tok_invalid) {
         switch(token) {
             case tok_select:
+            {
                 // select is a collection of operations (separated by commas)
                 if (state != tok_invalid) {
                     std::cout << "Unexpected SELECT." << std::endl;
                     return NULL;
                 }
                 state = tok_select;
-                parsed_query->selection = ParseOperationList(query, index);
-                if (parsed_query->selection == NULL) {
-                    return NULL;
+                Token peek = PeekToken(query, index);
+                // handle "SELECT * FROM table" as special case
+                if (peek == tok_operator && strval == "*") {
+                    // consume the token
+                    ParseToken(query, index);
+                    select_all = true;
+                } else {
+                    parsed_query->selection = ParseOperationList(query, index);
+                    if (parsed_query->selection == NULL) {
+                        return NULL;
+                    }
                 }
                 break;
+            }
             case tok_from:
                 // from is just a table name, we don't support sub-queries here
                 if (state != tok_select) {
@@ -426,7 +484,6 @@ static Query *ParseQuery(std::string query) {
                 break;
             case tok_where:
             {
-                // where is a single operation
                 if (state != tok_from) {
                     std::cout << "Unexpected WHERE." << std::endl;
                     return NULL;
@@ -436,6 +493,8 @@ static Query *ParseQuery(std::string query) {
                 if (collection == NULL) {
                     return NULL;
                 }
+                // where contains a single operation (x && y && z)
+                // unlike SELECT clause which can have multiple operations (x, y, z)
                 if (collection->next != NULL) {
                     std::cout << "Unexpected comma in WHERE." << std::endl;
                     return NULL;
@@ -453,6 +512,10 @@ static Query *ParseQuery(std::string query) {
         std::cout << "Failed to parse SQL query." << std::endl;
         free(parsed_query);
         return NULL;
+    }
+    if (select_all) {
+        // get all table columns
+        parsed_query->selection = SelectStarFromTable(GetTable(std::string(parsed_query->table)));
     }
     for(OperationList *list = parsed_query->selection; list; list = list->next) {
         list->columns = GetColumns(table, list->operation);

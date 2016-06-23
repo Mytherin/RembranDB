@@ -367,7 +367,7 @@ ExecuteQuery(Query *query) {
         free(inputs);
 
         Column *column = (Column*) malloc(sizeof(Column));
-        column->name = strdup("Result");
+        column->name = OperationToString(op);
         column->type = TYPE_dbl;
         column->elsize = sizeof(double);
         column->base_oid = 0;
