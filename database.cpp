@@ -191,7 +191,8 @@ static Value *PerformOperation(Operation *op, Value *index) {
         AllocaInst *address = colop->column->address;
         LoadInst *value_address = builder.CreateLoad(address);
         Type *column_type = GetLLVMType(context, colop->column->type);
-        Value *colptr = builder.CreateGEP(column_type, value_address, index, "column[i]");
+        Value *ptr = builder.CreatePointerCast(value_address, PointerType::get(column_type, 0));
+        Value *colptr = builder.CreateGEP(column_type, ptr, index, "column[i]");
         Value *value = builder.CreateLoad(colptr);
         if (colop->column->type == TYPE_dbl) return value;
         if (colop->column->type == TYPE_flt) {
@@ -257,7 +258,7 @@ ExecuteQuery(Query *query) {
         Type *doubleptr_tpe = PointerType::get(double_tpe, 0);
         Type *int64_tpe = Type::getInt64Ty(context);
         Type *void_tpe = Type::getVoidTy(context);
-        Type *voidptr_tpe = PointerType::get(void_tpe, 0);
+        Type *voidptr_tpe = PointerType::get(int64_tpe, 0);
         Type *voidptrptr_tpe = PointerType::get(voidptr_tpe, 0);
 
         std::vector<Type *> arguments(3);

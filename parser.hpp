@@ -105,7 +105,7 @@ static bool IsOperator(char c) {
 }
 
 
-static void _PrintOperation(Operation* operation) {
+static inline void _PrintOperation(Operation* operation) {
     if (!operation) return;
     if (operation->Type() == OPTYPE_binop) {
         BinaryOperation *binop = (BinaryOperation*) operation;
