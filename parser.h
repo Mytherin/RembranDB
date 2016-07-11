@@ -81,6 +81,7 @@ struct _ColumnList {
 };
 //scans the relevant columns from an operation
 static ColumnList* GetColumns(Table *table, Operation *op); 
+static ColumnList* UnionColumns(ColumnList *a, ColumnList *b);
 
 struct _OperationList;
 typedef struct _OperationList OperationList;
@@ -97,9 +98,10 @@ typedef struct {
 } BaseOperation;
 
 typedef struct {
-    BaseOperation *select;
+    Operation *select;
     char *table;
-    BaseOperation *where;
+    Operation *where;
+    ColumnList *columns;
 } Query;
 
 typedef enum {
@@ -455,7 +457,7 @@ static Query *ParseQuery(char* query) {
                     ParseToken(query, &index);
                     select_all = true;
                 } else {
-                    parsed_query->select = (BaseOperation*) ParseOperationList(query, &index);
+                    parsed_query->select = ParseOperationList(query, &index)->operation;
                     if (parsed_query->select == NULL) {
                         return NULL;
                     }
@@ -497,7 +499,7 @@ static Query *ParseQuery(char* query) {
                     printf("Unexpected comma in WHERE.\n");
                     return NULL;
                 }
-                parsed_query->where = (BaseOperation*) collection;
+                parsed_query->where = collection->operation;
                 break;
             }
             default:
@@ -513,15 +515,15 @@ static Query *ParseQuery(char* query) {
     }
     if (select_all) {
         // get all table columns
-        parsed_query->select = (BaseOperation*) SelectStarFromTable(GetTable(parsed_query->table));
+        parsed_query->select = SelectStarFromTable(GetTable(parsed_query->table))->operation;
     }
-    parsed_query->select->columns = GetColumns(table, parsed_query->select->operation);
-    parsed_query->where->columns = GetColumns(table, parsed_query->where->operation);
+    parsed_query->columns = UnionColumns(GetColumns(table, parsed_query->select), GetColumns(table, parsed_query->where));
     return parsed_query;
 }
 
 bool
 _GetColumns(Table *table, Operation *op, ColumnList *current) {
+    if (!op) return true;
     if (op->type== OPTYPE_binop) {
         return _GetColumns(table, ((BinaryOperation*)op)->left, current) && _GetColumns(table, ((BinaryOperation*)op)->right, current);
     } else if (op->type == OPTYPE_colmn) {
@@ -556,6 +558,39 @@ GetColumns(Table *table, Operation *op) {
     list->next = NULL;
     if (!_GetColumns(table, op, list)) return NULL; //unrecognized column
     return list;
+}
+
+static 
+bool ColumnInList(ColumnList *l, Column *c) {
+    while (l) {
+        if (l->column == c) {
+            return true;
+        }
+        l = l->next;
+    }
+    return false;
+}
+
+static ColumnList* Tail(ColumnList *l) {
+    while(l->next) {
+        l = l->next;
+    }
+    return l;
+}
+
+static ColumnList*
+UnionColumns(ColumnList *a, ColumnList *b) {
+    ColumnList *tail = Tail(a);
+    while(b) {
+        if (!ColumnInList(a, b->column)) {
+            tail->next = (ColumnList*) malloc(sizeof(ColumnList));
+            tail->next->column = b->column;
+            tail->next->next = NULL;
+            tail = tail->next;
+        }
+        b = b->next;
+    }
+    return a;
 }
 
 static size_t

@@ -35,18 +35,20 @@ ExecuteQuery(Query *query) {
     // This function takes a Query object as input, and should return a table
     // The query object has the following structure:
     /*
-    *  typedef struct {
-    *      BaseOperation *select;
-    *      char *table;
-    *      BaseOperation *where;
-    *  } Query;
-    */
-    // "Select" is an operation that describe the SELECT part of the query
+     *  typedef struct {
+     *      Operation *select;
+     *      char *table;
+     *      Operation *where;
+     *      ColumnList *columns;
+     *  } Query;
+     */
+    // "select" is the operation that describe the SELECT part of the query
     //   for simplicity, we only allow one statement in the SELECT clause
-    // "Table" is just the table name in the FROM clause
-    // "Where" is a single operation that describes the WHERE condition
+    // "table" is just the table name in the FROM clause
+    // "where" is the operation that describes the WHERE condition
+    // "columns" is a list of all columns that are part of the query
 
-    // Both "Select" and "Where" are a BaseOperation structure,
+    // Both "Select" and "Where" are an Operation structure,
     // this structure contains the Operation that has to be performed
     // An operation is one of the following types:
     // 
@@ -66,9 +68,6 @@ ExecuteQuery(Query *query) {
     //    - The RHS of the operation ((BinaryOperation*)op)->right
     //    Binary operations can be nested to create complex expressions
     //      i.e. ->left can be a BinaryOperation as well
-    //
-    // As additional helper structure, the BaseOperation contains
-    //  a list of columns referenced by the operation(stored in ->columns)
 
     // To correctly answer queries, you should handle both query->select and 
     //   query->where using JIT compilation
@@ -88,15 +87,15 @@ ExecuteQuery(Query *query) {
         return NULL;
     }
 
-    BaseOperation* select = query->select;
+    Operation* select = query->select;
     Column *column = malloc(sizeof(Column));
     column->type = TYPE_dbl;
     column->elsize = 8;
-    if (select->operation->type != OPTYPE_colmn) {
+    if (select->type != OPTYPE_colmn) {
         printf("Error: Currently only supports column selections.\n");
         return NULL;
     } else {
-        ColumnOperation *colop = (ColumnOperation*) select->operation;
+        ColumnOperation *colop = (ColumnOperation*) select;
         column->data = colop->column->data;
         column->name = strdup(colop->column->name);
         column->size = colop->column->size;
