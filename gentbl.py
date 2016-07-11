@@ -11,9 +11,9 @@ os.mkdir('Tables')
 int_count = (1000 ** 3) / 4
 
 demo_table = {'name': 'demo', 'columns': {'x': {'type': 'dbl', 'count': 20}, 'y': {'type': 'dbl', 'count': 20}, 'z': {'type': 'dbl', 'count': 20}}}
-benchmark_table = {'name': 'benchmark', 'columns': {'x': {'type': 'dbl', 'count': int_count}, 'y': {'type': 'dbl', 'count': int_count}, 'z': {'type': 'dbl', 'count': int_count}}}
+# benchmark_table = {'name': 'benchmark', 'columns': {'x': {'type': 'dbl', 'count': int_count}, 'y': {'type': 'dbl', 'count': int_count}, 'z': {'type': 'dbl', 'count': int_count}}}
 
-tables = [demo_table, benchmark_table]
+tables = [demo_table]
 # fixed seed
 numpy.random.seed(37)
 

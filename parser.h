@@ -513,14 +513,10 @@ static Query *ParseQuery(char* query) {
     }
     if (select_all) {
         // get all table columns
-        parsed_query->select = SelectStarFromTable(GetTable(parsed_query->table));
+        parsed_query->select = (BaseOperation*) SelectStarFromTable(GetTable(parsed_query->table));
     }
-    for(OperationList *list = parsed_query->select; list; list = list->next) {
-        list->columns = GetColumns(table, list->operation);
-        if (!list->columns) {
-            return NULL;
-        }
-    }
+    parsed_query->select->columns = GetColumns(table, parsed_query->select->operation);
+    parsed_query->where->columns = GetColumns(table, parsed_query->where->operation);
     return parsed_query;
 }
 
@@ -570,6 +566,12 @@ GetColCount(ColumnList *columns) {
         count += 1;
     }
     return count;
+}
+
+void _unused_() {
+    (void) GetLLVMType;
+    (void) InvertColumnList;
+    (void) GetColCount;
 }
 
 

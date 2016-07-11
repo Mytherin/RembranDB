@@ -1,8 +1,19 @@
 
 
-CC = clang++
-CFLAGS = `llvm-config --cxxflags --ldflags --system-libs --libs`
+CC = clang
+CCPP = clang++
+CFLAGS = `llvm-config --cflags`
+CPPFLAGS = `llvm-config --cxxflags --ldflags` rembrandb.o `llvm-config --system-libs --libs`
 
 
-rembrandb.o: database.cpp
-	$(CC) -g database.cpp $(CFLAGS) -O0 -o rembrandb 
+binaries=rembrandb
+
+rembrandb.o: database.c parser.h table.h Makefile
+	$(CC) -g $(CFLAGS) -c database.c -O0 -o rembrandb.o
+	$(CCPP) -g -std=c++11 $(CPPFLAGS) -lffi -o rembrandb
+
+all: clean $(binaries)
+
+
+clean:
+	rm -f $(binaries) *.o

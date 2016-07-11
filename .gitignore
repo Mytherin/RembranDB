@@ -3,3 +3,6 @@ xxupdatepath
 checktbl
 Tables/
 rembrandb
+rembrandb.o
+rembrandb.dSYM/
+.DS_Store
