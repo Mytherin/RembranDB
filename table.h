@@ -29,6 +29,7 @@ struct _Column {
     void *data;
     Column *next;
     char *data_location;
+    LLVMValueRef llvm_ptr;
 };
 
 typedef struct {
@@ -65,7 +66,7 @@ static void RegisterTable(Table *table) {
 }
 
 static void create_substring(char **res, char *str, size_t start, size_t end) {
-    *res = (char*) malloc((end - start) * sizeof(char));
+    *res = (char*) calloc((1 + end - start), sizeof(char));
     memcpy(*res, &str[start], end - start);
 }
 
