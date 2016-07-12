@@ -10,7 +10,7 @@ binaries=rembrandb
 
 rembrandb.o: database.c parser.h table.h Makefile
 	$(CC) -g $(CFLAGS) -c database.c -O0 -o rembrandb.o
-	$(CCPP) -g -std=c++11 $(CPPFLAGS) -lffi -o rembrandb
+	$(CCPP) -g -std=c++11 $(CPPFLAGS) -o rembrandb
 
 all: clean $(binaries)
 
