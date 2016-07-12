@@ -1,10 +1,12 @@
 # RembranDB
-Simple database that is supposed to have an LLVM execution engine. However, the execution engine is not implemented yet! The execution engine can be found in `database.c`. The `ExecuteQuery()` function is responsible for 
+Simple database that is supposed to have an LLVM execution engine. However, the execution engine is not implemented yet! The execution engine can be found in `database.c`. The `ExecuteQuery()` function is responsible for executing queries. It takes a Query object as input, and produces a result table.
 
 # Usage
 You can generate tables for RembranDB by running `python gentbl.py`. By default the script will generate the table `demo` with three `DOUBLE` columns (`x`, `y`, `z`).
 
-You can run queries either in interactive mode by launching `rembrandb`, or execute individual queries by running `rembrandb -s '{query}'`.
+* You can run queries either in interactive mode by launching `rembrandb`
+* You can execute individual queries by running `rembrandb -s [query]`
+* You can execute a set of queries from a file by running `rembrandb -f [filename]`
 
 # Building
 Run `make`. Note that `llvm-config` must be in your path for RembranDB to build. It requires LLVM 3.7 or higher (older versions have a different API). Many package managers only have older LLVM versions; you can build the latest version from source by following the instructions [here](http://clang.llvm.org/get_started.html).
