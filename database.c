@@ -5,6 +5,9 @@
 #include <llvm-c/Target.h>
 #include <llvm-c/Analysis.h>
 #include <llvm-c/BitWriter.h>
+#include <llvm-c/Transforms/IPO.h>
+#include <llvm-c/Transforms/Scalar.h>
+#include <llvm-c/Transforms/Vectorize.h>
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -17,10 +20,13 @@
 #include "table.h"
 #include "parser.h"
 
+#include "target_machine.h"
+
 static void Initialize(void);
 static char* ReadQuery(void);
 static Table *ExecuteQuery(Query *query);
 static void Cleanup(void); 
+static LLVMPassManagerRef InitializePassManager(LLVMModuleRef module);
 
 static bool enable_optimizations = false;
 static bool print_result = true;
@@ -73,14 +79,27 @@ ExecuteQuery(Query *query) {
     //   query->where using JIT compilation
 
     // Hint: Write a function to handle to handle a specific query in C,
-    //  such as 'SELECT x+5 FROM demo WHERE y > 50;'
+    //  I recommend starting with only selections
+    //  such as 'SELECT x+y+z FROM demo;'
     // then use the command "clang file.c -S -emit-llvm -o -"
     // to compile the C function to LLVM IR to get an idea of how to do it in LLVM
 
-    // For now, we implement a basic engine that supports only selections
-    Table *result = malloc(sizeof(Table));
-    result->name = strdup("Result");
-    result->columns = NULL;
+    // note that your function will have to accept an arbitrary amount of input columns
+    // (how would you do that in C?)
+
+    // For now, we implement a basic engine that only implements selection
+
+    // we implement a simple for loop
+    /*
+     * void loop(double *result, double *input, long long length) {
+     *     for(long long i = 0; i < length; i++) {
+     *         result[i] = input[i];
+     *     }
+     * }
+     */
+
+     (void) InitializePassManager;
+     (void) LLVMOptimizeModuleForTarget;
 
     if (query->where != NULL) {
         printf("Error: WHERE operation is currently not supported.\n");
@@ -88,20 +107,15 @@ ExecuteQuery(Query *query) {
     }
 
     Operation* select = query->select;
-    Column *column = malloc(sizeof(Column));
-    column->type = TYPE_dbl;
-    column->elsize = 8;
+    Column *column = NULL;
     if (select->type != OPTYPE_colmn) {
         printf("Error: Currently only supports column selections.\n");
         return NULL;
     } else {
         ColumnOperation *colop = (ColumnOperation*) select;
-        column->data = colop->column->data;
-        column->name = strdup(colop->column->name);
-        column->size = colop->column->size;
+        column = CreateColumn(colop->column->data, colop->column->size);
     }
-    result->columns = column;
-    return result;
+    return CreateTable("Result", column);
 }
 
 int main(int argc, char** argv) {
@@ -173,11 +187,47 @@ int main(int argc, char** argv) {
     Cleanup();
 }
 
-static void OptimizeLLVM(void) {
+static LLVMPassManagerRef InitializePassManager(LLVMModuleRef module) {
+    LLVMPassManagerRef passManager = LLVMCreateFunctionPassManagerForModule(module);
+    // This set of passes was copied from the Julia people (who probably know what they're doing)
+    // Julia Passes: https://github.com/JuliaLang/julia/blob/master/src/jitlayers.cpp
+
+    LLVMAddTargetMachinePasses(passManager);
+    LLVMAddCFGSimplificationPass(passManager);
+    LLVMAddPromoteMemoryToRegisterPass(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+    LLVMAddScalarReplAggregatesPass(passManager);
+    LLVMAddScalarReplAggregatesPassSSA(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+    LLVMAddJumpThreadingPass(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+    LLVMAddReassociatePass(passManager);
+    LLVMAddEarlyCSEPass(passManager);
+    LLVMAddLoopIdiomPass(passManager);
+    LLVMAddLoopRotatePass(passManager);
+    LLVMAddLICMPass(passManager);
+    LLVMAddLoopUnswitchPass(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+    LLVMAddIndVarSimplifyPass(passManager);
+    LLVMAddLoopDeletionPass(passManager);
+    LLVMAddLoopUnrollPass(passManager);
+    LLVMAddLoopVectorizePass(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+    LLVMAddGVNPass(passManager);
+    LLVMAddMemCpyOptPass(passManager);
+    LLVMAddSCCPPass(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+    LLVMAddSLPVectorizePass(passManager);
+    LLVMAddAggressiveDCEPass(passManager);
+    LLVMAddInstructionCombiningPass(passManager);
+
+    LLVMInitializeFunctionPassManager(passManager);
+    return passManager;
 }
 
 static void Initialize(void) {
-    // LLVM initialization code
+    // LLVM boilerplate initialization code
+    LLVMLinkInMCJIT();
     LLVMInitializeNativeTarget();
     LLVMInitializeAllTargetMCs();
     LLVMInitializeAllAsmPrinters();

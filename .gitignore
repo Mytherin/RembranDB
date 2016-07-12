@@ -6,3 +6,6 @@ rembrandb
 rembrandb.o
 rembrandb.dSYM/
 .DS_Store
+*.o
+*.a
+llvmtest

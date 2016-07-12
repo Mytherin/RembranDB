@@ -91,6 +91,26 @@ static char** split(char *string, char delimiter, size_t *splits) {
     return split_values;
 }
 
+static Column* CreateColumn(double *data, long long count) {
+    Column *c = (Column*) calloc(1, sizeof(Column));
+    c->data = data;
+    c->size = count;
+    c->name = strdup("Column");
+    c->type = TYPE_dbl;
+    c->elsize = 8;
+    c->next = NULL;
+    c->data_location = NULL;
+    c->llvm_ptr = NULL;
+    return c;
+}
+
+static Table *CreateTable(const char *name, Column *c) {
+    Table *t = (Table*) calloc(1, sizeof(Table));
+    t->name = strdup(name);
+    t->columns = c;
+    return t;
+}
+
 static void 
 ReadColumnData(Column *column) {
     if (!column) return;
@@ -117,7 +137,7 @@ static Table* ReadTable(const char *table_name, char *name) {
         printf("Failed to open file %s.\n", name);
         return NULL;
     }
-    Table *table = (Table*) malloc(sizeof(Table));
+    Table *table = (Table*) calloc(1, sizeof(Table));
     table->name = strdup(table_name);
     table->columns = NULL;
 
@@ -131,7 +151,7 @@ static Table* ReadTable(const char *table_name, char *name) {
             printf("Expected [name] [type] [size].\n");
             return NULL;
         }
-        Column *column = (Column*) malloc(sizeof(Column));
+        Column *column = (Column*) calloc(1, sizeof(Column));
         column->name = strdup(splits[0]);
         column->next = table->columns;
 
