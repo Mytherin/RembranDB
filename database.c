@@ -87,16 +87,10 @@ ExecuteQuery(Query *query) {
     // note that your function will have to accept an arbitrary amount of input columns
     // (how would you do that in C?)
 
-    // For now, we implement a basic engine that only implements selection
+    // For a simple for-loop implementation using LLVM JIT Compilation, see llvmtest.c
+    // You can copy most of the code from there as a start to your execution engine
 
-    // we implement a simple for loop
-    /*
-     * void loop(double *result, double *input, long long length) {
-     *     for(long long i = 0; i < length; i++) {
-     *         result[i] = input[i];
-     *     }
-     * }
-     */
+    // For now, we implement a basic engine that only implements selection
 
      (void) InitializePassManager;
      (void) LLVMOptimizeModuleForTarget;
