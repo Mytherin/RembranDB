@@ -10,7 +10,7 @@ You can generate tables for RembranDB by running `python gentbl.py`. By default 
 # Building
 Run `make`. Note that `llvm-config` must be in your path for RembranDB to build. It requires LLVM 3.8 or higher (older versions have a different API). Many package managers only have older LLVM versions; you can build the latest version from source by following the instructions [here](http://clang.llvm.org/get_started.html). 
 
-Note that if you want to run performance experiments, you should compile LLVM with `-DCMAKE_BUILD_TYPE=Release` (CMake parameter).
+Note that if you want to run performance experiments, you should compile LLVM with `-DCMAKE_BUILD_TYPE=Release` (CMake parameter). However, for debug purposes you might want to build with `-DCMAKE_BUILD_TYPE=Debug` while testing your code. 
 
 LLVM is already installed on a few scilens machines in `/scratch/llvm` (`stones04`, `stones05`, `stones06`), feel free to use those installations. Run `export PATH=/scratch/llvm/bin:$PATH` to add `llvm-config` to your path and you should be able to compile RembranDB. Alternatively, there is a shell script [here](https://gist.github.com/Mytherin/3b6ef566dee90bb27a815a860bd1a03f) for building LLVM from source that should work on all the cluster machines. 
 
