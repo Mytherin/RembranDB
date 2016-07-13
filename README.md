@@ -13,3 +13,7 @@ Run `make`. Note that `llvm-config` must be in your path for RembranDB to build.
 Note that if you want to run performance experiments, you should compile LLVM with `-DCMAKE_BUILD_TYPE=Release` (CMake parameter).
 
 LLVM is already installed on a few scilens machines in `/scratch/llvm` (`stones04`, `stones05`, `stones06`), feel free to use those installations. Run `export PATH=/scratch/llvm/bin:$PATH` to add `llvm-config` to your path and you should be able to compile RembranDB. Alternatively, there is a shell script [here](https://gist.github.com/Mytherin/3b6ef566dee90bb27a815a860bd1a03f) for building LLVM from source that should work on all the cluster machines. 
+
+# Tips
+* You can compile C code to LLVM IR using `clang`: `clang file.c -S -emit-llvm -o -`
+* When generating LLVM IR using the C API, you can use the `LLVMDumpModule(module)` function to write the generated IR to the console.
