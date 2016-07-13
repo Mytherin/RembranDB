@@ -3,8 +3,8 @@
 CC = clang
 CCPP = clang++
 CFLAGS = `llvm-config --cflags`
-CPPFLAGS = `llvm-config --cxxflags --ldflags`
-CPPLIBS =  `llvm-config --system-libs --libs` -L`pwd` -lLLVMTargetMachineExtra
+CPPFLAGS = `llvm-config --cxxflags`
+CPPLIBS =  -L`pwd` -lLLVMTargetMachineExtra `llvm-config --ldflags --system-libs --libs`
 
 
 binaries=rembrandb libLLVMTargetMachineExtra.a llvmtest
