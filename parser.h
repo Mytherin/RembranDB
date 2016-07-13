@@ -1,4 +1,6 @@
 
+#include "assert.h"
+
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
@@ -303,13 +305,13 @@ static Operation *ParsePrimary(char *query, size_t *index) {
         {
             Operation *op = ParseOperation(query, index);
             if (ParseToken(query, index) != tok_rightparen) {
-                printf("Expected right parenthesis.\n");
+                fprintf(stderr, "Expected right parenthesis.\n");
                 return NULL;
             }
             return op;
         }
         default:
-            printf("Unexpected token %s.\n", TokToString(token));
+            fprintf(stderr, "Unexpected token %s.\n", TokToString(token));
             return NULL;
     }
 }
@@ -446,7 +448,7 @@ static Query *ParseQuery(char* query) {
             {
                 // select is a collection of operations (separated by commas)
                 if (state != tok_invalid) {
-                    printf("Unexpected SELECT.\n");
+                    fprintf(stderr, "Unexpected SELECT.\n");
                     return NULL;
                 }
                 state = tok_select;
@@ -467,25 +469,25 @@ static Query *ParseQuery(char* query) {
             case tok_from:
                 // from is just a table name, we don't support sub-queries here
                 if (state != tok_select) {
-                    printf("Unexpected FROM.\n");
+                    fprintf(stderr, "Unexpected FROM.\n");
                     return NULL;
                 }
                 state = tok_from;
                 if ((token = ParseToken(query, &index)) != tok_identifier) {
-                    printf("Expected table name after FROM.");
+                    fprintf(stderr, "Expected table name after FROM.");
                     return NULL;
                 }
                 parsed_query->table = strdup(strval);
                 table = GetTable(parsed_query->table);
                 if (table == NULL) {
-                    printf("Unrecognized table: %s\n", parsed_query->table);
+                    fprintf(stderr, "Unrecognized table: %s\n", parsed_query->table);
                     return NULL;
                 }
                 break;
             case tok_where:
             {
                 if (state != tok_from) {
-                    printf("Unexpected WHERE.\n");
+                    fprintf(stderr, "Unexpected WHERE.\n");
                     return NULL;
                 }
                 state = tok_where;
@@ -496,20 +498,20 @@ static Query *ParseQuery(char* query) {
                 // where contains a single operation (x && y && z)
                 // unlike SELECT clause which can have multiple operations (x, y, z)
                 if (collection->next != NULL) {
-                    printf("Unexpected comma in WHERE.\n");
+                    fprintf(stderr, "Unexpected comma in WHERE.\n");
                     return NULL;
                 }
                 parsed_query->where = collection->operation;
                 break;
             }
             default:
-                printf("Unexpected token %s\n", TokToString(token));
+                fprintf(stderr, "Unexpected token %s\n", TokToString(token));
                 return NULL;
 
         }
     }
     if (token == tok_invalid) {
-        printf("Failed to parse SQL query.\n");
+        fprintf(stderr, "Failed to parse SQL query.\n");
         free(parsed_query);
         return NULL;
     }
@@ -517,7 +519,18 @@ static Query *ParseQuery(char* query) {
         // get all table columns
         parsed_query->select = SelectStarFromTable(GetTable(parsed_query->table))->operation;
     }
-    parsed_query->columns = UnionColumns(GetColumns(table, parsed_query->select), GetColumns(table, parsed_query->where));
+    ColumnList *select_columns = GetColumns(table, parsed_query->select);
+    if (select_columns == NULL) {
+        return NULL;
+    }
+    ColumnList *where_columns = NULL;
+    if (parsed_query->where != NULL) {
+        where_columns = GetColumns(table, parsed_query->where);
+        if (where_columns == NULL) {
+            return NULL;
+        }
+    }
+    parsed_query->columns = UnionColumns(select_columns, where_columns);
     return parsed_query;
 }
 
@@ -529,7 +542,7 @@ _GetColumns(Table *table, Operation *op, ColumnList *current) {
     } else if (op->type == OPTYPE_colmn) {
         Column *column = GetColumn(table, ((ColumnOperation*)op)->name);
         if (!column) {
-            printf("Unrecognized column name %s\n", ((ColumnOperation*)op)->name);
+            fprintf(stderr, "Unrecognized column name %s\n", ((ColumnOperation*)op)->name);
             return false; //unrecognized column
         }
         // this column is used in a query, read the column data into memory if it is not already there
@@ -580,6 +593,9 @@ static ColumnList* Tail(ColumnList *l) {
 
 static ColumnList*
 UnionColumns(ColumnList *a, ColumnList *b) {
+    if (a == NULL && b == NULL) assert(0);
+    if (a == NULL) return b;
+    if (b == NULL) return a;
     ColumnList *tail = Tail(a);
     while(b) {
         if (!ColumnInList(a, b->column)) {

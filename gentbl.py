@@ -10,8 +10,7 @@ os.system('rm -rf %s' % root_folder)
 os.mkdir(root_folder)
 
 # tables to generate
-demo_table = 
-{
+demo_table = {
     'name': 'demo', 
     'columns': 
     {

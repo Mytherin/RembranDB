@@ -96,14 +96,14 @@ ExecuteQuery(Query *query) {
      (void) LLVMOptimizeModuleForTarget;
 
     if (query->where != NULL) {
-        printf("Error: WHERE operation is currently not supported.\n");
+        fprintf(stdout, "Error: WHERE operation is currently not supported.\n");
         return NULL;
     }
 
     Operation* select = query->select;
     Column *column = NULL;
     if (select->type != OPTYPE_colmn) {
-        printf("Error: Currently only supports column selections.\n");
+        fprintf(stdout, "Error: Currently only supports column selections.\n");
         return NULL;
     } else {
         ColumnOperation *colop = (ColumnOperation*) select;
@@ -116,36 +116,36 @@ int main(int argc, char** argv) {
     for(int i = 1; i < argc; i++) {
         char *arg = argv[i];
         if (strcmp(arg, "--help") == 0) {
-            printf("RembranDB Options.\n");
-            printf("  -opt              Enable  LLVM optimizations.\n");
-            printf("  -no-print         Do not print query results.\n");
-            printf("  -no-llvm          Do not print LLVM instructions.\n");
-            printf("  -s \"stmnt\"        Execute \"stmnt\" and exit.\n");
+            fprintf(stdout, "RembranDB Options.\n");
+            fprintf(stdout, "  -opt              Enable  LLVM optimizations.\n");
+            fprintf(stdout, "  -no-print         Do not print query results.\n");
+            fprintf(stdout, "  -no-llvm          Do not print LLVM instructions.\n");
+            fprintf(stdout, "  -s \"stmnt\"        Execute \"stmnt\" and exit.\n");
             return 0;
         } else if (strcmp(arg, "-opt") == 0) {
-            printf("Optimizations enabled.\n");
+            fprintf(stdout, "Optimizations enabled.\n");
             enable_optimizations = true;
         } else if (strcmp(arg, "-no-print") == 0) {
-            printf("Printing output disabled.\n");
+            fprintf(stdout, "Printing output disabled.\n");
             print_result = false;
         } else if (strcmp(arg, "-no-llvm") == 0) {
-            printf("Printing LLVM disabled.\n");
+            fprintf(stdout, "Printing LLVM disabled.\n");
             print_llvm = false;
         } else if (strcmp(arg, "-s") == 0) {
             execute_statement = true;
         } else if (execute_statement) {
             statement = arg;
         } else {
-            printf("Unrecognized command line option \"%s\".\n", arg);
+            fprintf(stdout, "Unrecognized command line option \"%s\".\n", arg);
             exit(1);
         }
     }
     if (!execute_statement) {
-        printf("# RembranDB server v0.0.0.1\n");
-        printf("# Serving table \"demo\", with no support for multithreading\n");
-        printf("# Did not find any available memory (didn't look for any either)\n");
-        printf("# Not listening to any connection requests.\n");
-        printf("# RembranDB/SQL module loaded\n");
+        fprintf(stdout, "# RembranDB server v0.0.0.1\n");
+        fprintf(stdout, "# Serving table \"demo\", with no support for multithreading\n");
+        fprintf(stdout, "# Did not find any available memory (didn't look for any either)\n");
+        fprintf(stdout, "# Not listening to any connection requests.\n");
+        fprintf(stdout, "# RembranDB/SQL module loaded\n");
     }
     Initialize();
 
@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
             Table *tbl = ExecuteQuery(query);
             clock_t toc = clock();
 
-            printf("Total Runtime: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+            fprintf(stdout, "Total Runtime: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
 
             if (print_result) {
                 PrintTable(tbl);
