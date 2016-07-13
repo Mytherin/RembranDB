@@ -17,3 +17,4 @@ LLVM is already installed on a few scilens machines in `/scratch/llvm` (`stones0
 # Tips
 * You can compile C code to LLVM IR using `clang`: `clang file.c -S -emit-llvm -o -`
 * When generating LLVM IR using the C API, you can use the `LLVMDumpModule(module)` function to write the generated IR to the console.
+* Note that there are different instructions for integer and floating point operations (e.g. `LLVMBuildAdd` and `LLVMBuildFAdd`).
